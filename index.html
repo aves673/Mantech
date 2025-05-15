@@ -15,7 +15,6 @@
   </header>
 
   <main>
-    <!-- Login -->
     <section>
       <h2>Login</h2>
       <form id="login-form">
@@ -26,9 +25,7 @@
       <p id="login-status"></p>
     </section>
 
-    <!-- Conteúdo principal -->
     <section id="conteudo-app" style="display:none">
-      <!-- Abertura de Chamado -->
       <section>
         <h2>Abertura de Chamado</h2>
         <form id="chamado-form">
@@ -42,7 +39,6 @@
         </form>
       </section>
 
-      <!-- Cadastro de Equipamento -->
       <section>
         <h2>Cadastro de Equipamentos</h2>
         <form id="equipamento-form">
@@ -53,13 +49,11 @@
         </form>
       </section>
 
-      <!-- Chamados Abertos -->
       <section>
         <h2>Chamados</h2>
         <ul id="lista-chamados"></ul>
       </section>
 
-      <!-- Equipamentos Cadastrados -->
       <section>
         <h2>Equipamentos</h2>
         <ul id="lista-equipamentos"></ul>
@@ -67,112 +61,154 @@
     </section>
   </main>
 
-  <script>
-    // Firebase config
-    const firebaseConfig = {
-      apiKey: "AIzaSyALTdOaUKXMYPVotTxmlxFwqCNYvbPvhf0",
-      authDomain: "mantech-a6859.firebaseapp.com",
-      databaseURL: "https://mantech-a6859-default-rtdb.firebaseio.com",
-      projectId: "mantech-a6859",
-      storageBucket: "mantech-a6859.appspot.com",
-      messagingSenderId: "54682360325",
-      appId: "1:54682360325:web:93ff10af2afc0af99eda6c"
-    };
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyALTdOaUKXMYPVotTxmlxFwqCNYvbPvhf0",
+  authDomain: "mantech-a6859.firebaseapp.com",
+  databaseURL: "https://mantech-a6859-default-rtdb.firebaseio.com",
+  projectId: "mantech-a6859",
+  storageBucket: "mantech-a6859.appspot.com",
+  messagingSenderId: "54682360325",
+  appId: "1:54682360325:web:93ff10af2afc0af99eda6c"
+};
 
-    // Inicialização
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.database();
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.database();
 
-    const loginForm = document.getElementById("login-form");
-    const conteudoApp = document.getElementById("conteudo-app");
-    const loginStatus = document.getElementById("login-status");
+const loginForm = document.getElementById("login-form");
+const conteudoApp = document.getElementById("conteudo-app");
+const loginStatus = document.getElementById("login-status");
 
-    loginForm.addEventListener("submit", (e) => {
-      e.preventDefault();
-      const email = document.getElementById("email").value;
-      const senha = document.getElementById("senha").value;
+loginForm.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const email = document.getElementById("email").value;
+  const senha = document.getElementById("senha").value;
 
-      auth.signInWithEmailAndPassword(email, senha)
-        .then(() => {
-          loginForm.style.display = "none";
-          conteudoApp.style.display = "block";
-        })
-        .catch(error => {
-          loginStatus.textContent = "Erro: " + error.message;
-        });
+  auth.signInWithEmailAndPassword(email, senha)
+    .then(() => {
+      loginForm.style.display = "none";
+      conteudoApp.style.display = "block";
+    })
+    .catch(error => {
+      loginStatus.textContent = "Erro: " + error.message;
     });
+});
 
-    // Cadastro de Equipamento
-    document.getElementById("equipamento-form").addEventListener("submit", (e) => {
-      e.preventDefault();
-      const nome = document.getElementById("nome-equipamento").value;
-      const local = document.getElementById("localizacao").value;
-      const resp = document.getElementById("responsavel").value;
-      db.ref("equipamentos").push({ nome, local, resp });
-      e.target.reset();
+// Cadastro Equipamento
+const equipamentoForm = document.getElementById("equipamento-form");
+equipamentoForm.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const nome = document.getElementById("nome-equipamento").value;
+  const local = document.getElementById("localizacao").value;
+  const resp = document.getElementById("responsavel").value;
+  const editId = e.target.dataset.editId;
+
+  if (editId) {
+    db.ref("equipamentos/" + editId).update({ nome, local, resp });
+    delete e.target.dataset.editId;
+  } else {
+    db.ref("equipamentos").push({ nome, local, resp });
+  }
+
+  e.target.reset();
+});
+
+// Abertura Chamado
+const chamadoForm = document.getElementById("chamado-form");
+chamadoForm.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const equipamento = document.getElementById("equipamento").value;
+  const tipo = document.getElementById("tipo").value;
+  const descricao = document.getElementById("descricao").value;
+  const editId = e.target.dataset.editId;
+
+  if (editId) {
+    db.ref("chamados/" + editId).update({ equipamento, tipo, descricao });
+    delete e.target.dataset.editId;
+  } else {
+    db.ref("chamados").push({
+      equipamento,
+      tipo,
+      descricao,
+      status: "Aberto",
+      data: new Date().toLocaleString()
     });
+  }
 
-    // Abertura de Chamado
-    document.getElementById("chamado-form").addEventListener("submit", (e) => {
-      e.preventDefault();
-      const equipamento = document.getElementById("equipamento").value;
-      const tipo = document.getElementById("tipo").value;
-      const descricao = document.getElementById("descricao").value;
-      db.ref("chamados").push({
-        equipamento,
-        tipo,
-        descricao,
-        status: "Aberto",
-        data: new Date().toLocaleString()
-      });
-      e.target.reset();
-    });
+  e.target.reset();
+});
 
-    // Mostrar Chamados
-    db.ref("chamados").on("value", snapshot => {
-      const lista = document.getElementById("lista-chamados");
-      lista.innerHTML = "";
-      snapshot.forEach(child => {
-        const ch = child.val();
-        const li = document.createElement("li");
-        li.innerHTML = `
-          ${ch.tipo.toUpperCase()} - ${ch.equipamento}: ${ch.descricao} (${ch.data})<br>
-          Status: ${ch.status || "Aberto"}
-          ${ch.status !== "Encerrado" ? `<br><button onclick="encerrarChamado('${child.key}')">Encerrar</button>` : ""}
-          ${ch.status === "Encerrado" ? `<br>Encerrado em: ${ch.dataEncerramento}` : ""}
-        `;
-        lista.appendChild(li);
-      });
-    });
+// Mostrar Chamados
+const listaChamados = document.getElementById("lista-chamados");
+db.ref("chamados").on("value", snapshot => {
+  listaChamados.innerHTML = "";
+  snapshot.forEach(child => {
+    const ch = child.val();
+    const li = document.createElement("li");
+    li.innerHTML = `
+      ${ch.tipo.toUpperCase()} - ${ch.equipamento}: ${ch.descricao} (${ch.data})<br>
+      Status: ${ch.status || "Aberto"}
+      ${ch.status !== "Encerrado" ? `<br><button onclick=\"encerrarChamado('${child.key}')\">Encerrar</button>` : ""}
+      <button onclick=\"editarChamado('${child.key}', '${ch.equipamento.replace(/'/g, "\\'")}', '${ch.tipo}', \`${ch.descricao.replace(/`/g, "\\`")}\`)\">Editar</button>
+      <button onclick=\"removerChamado('${child.key}')\">Remover</button>
+      ${ch.status === "Encerrado" ? `<br>Encerrado em: ${ch.dataEncerramento}` : ""}
+    `;
+    listaChamados.appendChild(li);
+  });
+});
 
-    // Encerrar Chamado
-    function encerrarChamado(id) {
-      db.ref("chamados/" + id).update({
-        status: "Encerrado",
-        dataEncerramento: new Date().toLocaleString()
-      });
-    }
+function encerrarChamado(id) {
+  db.ref("chamados/" + id).update({
+    status: "Encerrado",
+    dataEncerramento: new Date().toLocaleString()
+  });
+}
 
-    // Mostrar Equipamentos
-    db.ref("equipamentos").on("value", snapshot => {
-      const lista = document.getElementById("lista-equipamentos");
-      lista.innerHTML = "";
-      snapshot.forEach(child => {
-        const eq = child.val();
-        const li = document.createElement("li");
-        li.innerHTML = `
-          ${eq.nome} - ${eq.local} (Resp: ${eq.resp})
-          <br><button onclick="removerEquipamento('${child.key}')">Remover</button>
-        `;
-        lista.appendChild(li);
-      });
-    });
+function removerChamado(id) {
+  if (confirm("Tem certeza que deseja remover este chamado?")) {
+    db.ref("chamados/" + id).remove();
+  }
+}
 
-    // Remover Equipamento
-    function removerEquipamento(id) {
-      db.ref("equipamentos/" + id).remove();
-    }
-  </script>
+function editarChamado(id, equipamento, tipo, descricao) {
+  document.getElementById("equipamento").value = equipamento;
+  document.getElementById("tipo").value = tipo;
+  document.getElementById("descricao").value = descricao;
+  chamadoForm.dataset.editId = id;
+  window.scrollTo(0, 0);
+}
+
+// Mostrar Equipamentos
+const listaEquipamentos = document.getElementById("lista-equipamentos");
+db.ref("equipamentos").on("value", snapshot => {
+  listaEquipamentos.innerHTML = "";
+  snapshot.forEach(child => {
+    const eq = child.val();
+    const li = document.createElement("li");
+    li.innerHTML = `
+      ${eq.nome} - ${eq.local} (Resp: ${eq.resp})
+      <button onclick="editarEquipamento('${child.key}', '${eq.nome}', '${eq.local}', '${eq.resp}')">Editar</button>
+      <button onclick="removerEquipamento('${child.key}')">Remover</button>
+    `;
+    listaEquipamentos.appendChild(li);
+  });
+});
+
+function removerEquipamento(id) {
+  if (confirm("Tem certeza que deseja remover este equipamento?")) {
+    db.ref("equipamentos/" + id).remove();
+  }
+}
+
+function editarEquipamento(id, nome, local, resp) {
+  document.getElementById("nome-equipamento").value = nome;
+  document.getElementById("localizacao").value = local;
+  document.getElementById("responsavel").value = resp;
+  equipamentoForm.dataset.editId = id;
+  window.scrollTo(0, 0);
+}
+</script>
+
 </body>
 </html>
