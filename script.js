@@ -30,6 +30,22 @@ function renderEquipamentos() {
   });
 }
 
+const tecnico = document.getElementById("tecnico").value;
+const prioridade = document.getElementById("prioridade").value;
+const previsao = document.getElementById("previsao").value;
+
+db.ref("chamados").push({
+  equipamento,
+  tipo,
+  descricao,
+  tecnico,
+  prioridade,
+  previsao,
+  status: "Aberto",
+  data: new Date().toLocaleString()
+});
+
+
 renderEquipamentos();
 
 // Chamados
