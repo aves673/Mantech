@@ -89,6 +89,7 @@ loginForm.addEventListener("submit", (e) => {
     .then(() => {
       loginForm.style.display = "none";
       conteudoApp.style.display = "block";
+      loginStatus.textContent = "";
     })
     .catch(error => {
       loginStatus.textContent = "Erro: " + error.message;
@@ -146,14 +147,21 @@ db.ref("chamados").on("value", snapshot => {
   snapshot.forEach(child => {
     const ch = child.val();
     const li = document.createElement("li");
+
+    // Funções para os botões — precisamos escapar caracteres para passar strings em onclick
+    const equipamentoEsc = ch.equipamento.replace(/'/g, "\\'");
+    const tipoEsc = ch.tipo;
+    const descricaoEsc = ch.descricao.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+
     li.innerHTML = `
       ${ch.tipo.toUpperCase()} - ${ch.equipamento}: ${ch.descricao} (${ch.data})<br>
       Status: ${ch.status || "Aberto"}
-      ${ch.status !== "Encerrado" ? `<br><button onclick=\"encerrarChamado('${child.key}')\">Encerrar</button>` : ""}
-      <button onclick=\"editarChamado('${child.key}', '${ch.equipamento.replace(/'/g, "\\'")}', '${ch.tipo}', \`${ch.descricao.replace(/`/g, "\\`")}\`)\">Editar</button>
-      <button onclick=\"removerChamado('${child.key}')\">Remover</button>
+      ${ch.status !== "Encerrado" ? `<br><button class="btn-encerrar" onclick="encerrarChamado('${child.key}')">Encerrar</button>` : ""}
+      <button class="btn-editar" onclick="editarChamado('${child.key}', '${equipamentoEsc}', '${tipoEsc}', '${descricaoEsc}')">Editar</button>
+      <button class="btn-remover" onclick="removerChamado('${child.key}')">Remover</button>
       ${ch.status === "Encerrado" ? `<br>Encerrado em: ${ch.dataEncerramento}` : ""}
     `;
+
     listaChamados.appendChild(li);
   });
 });
@@ -186,10 +194,15 @@ db.ref("equipamentos").on("value", snapshot => {
   snapshot.forEach(child => {
     const eq = child.val();
     const li = document.createElement("li");
+
+    const nomeEsc = eq.nome.replace(/'/g, "\\'");
+    const localEsc = eq.local.replace(/'/g, "\\'");
+    const respEsc = eq.resp.replace(/'/g, "\\'");
+
     li.innerHTML = `
       ${eq.nome} - ${eq.local} (Resp: ${eq.resp})
-      <button onclick="editarEquipamento('${child.key}', '${eq.nome}', '${eq.local}', '${eq.resp}')">Editar</button>
-      <button onclick="removerEquipamento('${child.key}')">Remover</button>
+      <button class="btn-editar" onclick="editarEquipamento('${child.key}', '${nomeEsc}', '${localEsc}', '${respEsc}')">Editar</button>
+      <button class="btn-remover" onclick="removerEquipamento('${child.key}')">Remover</button>
     `;
     listaEquipamentos.appendChild(li);
   });
