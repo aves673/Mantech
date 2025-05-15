@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Mantech</title>
   <link rel="stylesheet" href="style.css" />
-  <!-- Firebase compat SDKs (para uso direto em HTML) -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
@@ -27,8 +26,9 @@
       <p id="login-status"></p>
     </section>
 
-    <!-- Conteúdo após login -->
+    <!-- Conteúdo principal -->
     <section id="conteudo-app" style="display:none">
+      <!-- Abertura de Chamado -->
       <section>
         <h2>Abertura de Chamado</h2>
         <form id="chamado-form">
@@ -42,6 +42,7 @@
         </form>
       </section>
 
+      <!-- Cadastro de Equipamento -->
       <section>
         <h2>Cadastro de Equipamentos</h2>
         <form id="equipamento-form">
@@ -52,21 +53,22 @@
         </form>
       </section>
 
+      <!-- Chamados Abertos -->
       <section>
-        <h2>Chamados Abertos</h2>
+        <h2>Chamados</h2>
         <ul id="lista-chamados"></ul>
       </section>
 
+      <!-- Equipamentos Cadastrados -->
       <section>
-        <h2>Equipamentos Cadastrados</h2>
+        <h2>Equipamentos</h2>
         <ul id="lista-equipamentos"></ul>
       </section>
     </section>
   </main>
 
-  <!-- Firebase App + Lógica -->
   <script>
-    // Configuração do Firebase do seu projeto
+    // Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyALTdOaUKXMYPVotTxmlxFwqCNYvbPvhf0",
       authDomain: "mantech-a6859.firebaseapp.com",
@@ -77,12 +79,11 @@
       appId: "1:54682360325:web:93ff10af2afc0af99eda6c"
     };
 
-    // Inicialização do Firebase
+    // Inicialização
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.database();
 
-    // Login
     const loginForm = document.getElementById("login-form");
     const conteudoApp = document.getElementById("conteudo-app");
     const loginStatus = document.getElementById("login-status");
@@ -109,6 +110,7 @@
       const local = document.getElementById("localizacao").value;
       const resp = document.getElementById("responsavel").value;
       db.ref("equipamentos").push({ nome, local, resp });
+      e.target.reset();
     });
 
     // Abertura de Chamado
@@ -121,20 +123,10 @@
         equipamento,
         tipo,
         descricao,
+        status: "Aberto",
         data: new Date().toLocaleString()
       });
-    });
-
-    // Mostrar Equipamentos
-    db.ref("equipamentos").on("value", snapshot => {
-      const lista = document.getElementById("lista-equipamentos");
-      lista.innerHTML = "";
-      snapshot.forEach(child => {
-        const eq = child.val();
-        const li = document.createElement("li");
-        li.textContent = `${eq.nome} - ${eq.local} (Resp: ${eq.resp})`;
-        lista.appendChild(li);
-      });
+      e.target.reset();
     });
 
     // Mostrar Chamados
@@ -144,10 +136,43 @@
       snapshot.forEach(child => {
         const ch = child.val();
         const li = document.createElement("li");
-        li.textContent = `${ch.tipo.toUpperCase()} - ${ch.equipamento}: ${ch.descricao} (${ch.data})`;
+        li.innerHTML = `
+          ${ch.tipo.toUpperCase()} - ${ch.equipamento}: ${ch.descricao} (${ch.data})<br>
+          Status: ${ch.status || "Aberto"}
+          ${ch.status !== "Encerrado" ? `<br><button onclick="encerrarChamado('${child.key}')">Encerrar</button>` : ""}
+          ${ch.status === "Encerrado" ? `<br>Encerrado em: ${ch.dataEncerramento}` : ""}
+        `;
         lista.appendChild(li);
       });
     });
+
+    // Encerrar Chamado
+    function encerrarChamado(id) {
+      db.ref("chamados/" + id).update({
+        status: "Encerrado",
+        dataEncerramento: new Date().toLocaleString()
+      });
+    }
+
+    // Mostrar Equipamentos
+    db.ref("equipamentos").on("value", snapshot => {
+      const lista = document.getElementById("lista-equipamentos");
+      lista.innerHTML = "";
+      snapshot.forEach(child => {
+        const eq = child.val();
+        const li = document.createElement("li");
+        li.innerHTML = `
+          ${eq.nome} - ${eq.local} (Resp: ${eq.resp})
+          <br><button onclick="removerEquipamento('${child.key}')">Remover</button>
+        `;
+        lista.appendChild(li);
+      });
+    });
+
+    // Remover Equipamento
+    function removerEquipamento(id) {
+      db.ref("equipamentos/" + id).remove();
+    }
   </script>
 </body>
 </html>
